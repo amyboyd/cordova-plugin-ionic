@@ -230,7 +230,7 @@ public class IonicDeploy extends CordovaPlugin {
               if (upstream_uuid != "" && self.hasVersion(upstream_uuid)) {
                 // Set the current version to the upstream uuid
                 self.prefs.edit().putString("uuid", upstream_uuid).apply();
-                logMessage("EXTRACT", "Extracting update");
+                logMessage("EXTRACT", "Extracting update on startup");
                 self.unzip("www.zip", upstream_uuid, null);
               } else {
                 String url = self.last_update.getString("url");
@@ -285,7 +285,6 @@ public class IonicDeploy extends CordovaPlugin {
    * @return                  True if the action was valid, false if not.
    */
   public boolean execute(String action, JSONArray args, final CallbackContext callbackContext) throws JSONException {
-
     this.prefs = getPreferences();
 
     initApp(this.app_id);
@@ -693,7 +692,7 @@ public class IonicDeploy extends CordovaPlugin {
       String result = readStream(in);
 
       JSONObject jsonResponse = new JSONObject(result);
-      logMessage("POST_CHECK_RES", jsonResponse.toString(2));
+      logMessage("POST_CHECK_RES", "Result from " + endpoint + ": " + jsonResponse.toString(2));
 
       response.json = jsonResponse;
     } catch (JSONException e) {
@@ -757,7 +756,7 @@ public class IonicDeploy extends CordovaPlugin {
     SharedPreferences prefs = getPreferences();
     String upstream_uuid = prefs.getString("upstream_uuid", "");
 
-    logMessage("UNZIP", upstream_uuid);
+    logMessage("UNZIP", "Upstream UUID is: " + upstream_uuid);
 
     if (upstream_uuid != "" && this.hasVersion(upstream_uuid)) {
       this.ignore_deploy = false;
@@ -777,6 +776,8 @@ public class IonicDeploy extends CordovaPlugin {
       return;
     }
 
+    logMessage("UNZIP", "ZIP file is: " + zip);
+
     try  {
       FileInputStream inputStream = this.myContext.openFileInput(zip);
       ZipInputStream zipInputStream = new ZipInputStream(inputStream);
@@ -784,14 +785,13 @@ public class IonicDeploy extends CordovaPlugin {
 
       // Make the version directory in internal storage
       File versionDir = this.myContext.getDir(location, Context.MODE_PRIVATE);
-
-      logMessage("UNZIP_DIR", versionDir.getAbsolutePath().toString());
+      logMessage("UNZIP", "Version directory is: " + versionDir.getAbsolutePath().toString());
 
       // Figure out how many entries are in the zip so we can calculate extraction progress
       ZipFile zipFile = new ZipFile(this.myContext.getFileStreamPath(zip).getAbsolutePath().toString());
       float entries = new Float(zipFile.size());
 
-      logMessage("ENTRIES", "Total: " + (int) entries);
+      logMessage("UNZIP", "Entries: " + (int) entries);
 
       float extracted = 0.0f;
 
@@ -816,7 +816,7 @@ public class IonicDeploy extends CordovaPlugin {
           extracted += 1;
 
           float progress = (extracted / entries) * new Float("100.0f");
-          logMessage("EXTRACT", "Progress: " + (int) progress + "%");
+          logMessage("UNZIP", "Extraction progress: " + (int) progress + "%");
 
           if (callbackContext != null) {
             PluginResult progressResult = new PluginResult(PluginResult.Status.OK, (int) progress);
@@ -829,7 +829,7 @@ public class IonicDeploy extends CordovaPlugin {
 
     } catch(Exception e) {
       //TODO Handle problems..
-      logMessage("UNZIP_STEP", "Exception: " + e.getMessage());
+      logMessage("UNZIP_STEP", "Exception: " + e.getClass() + ": " + e.getMessage());
 
       // clean up any zip files dowloaded as they may be corrupted, we can download again if we start over
       String wwwFile = this.myContext.getFileStreamPath(zip).getAbsolutePath().toString();
@@ -1253,7 +1253,7 @@ public class IonicDeploy extends CordovaPlugin {
       if (this.callbackContext != null) {
         this.callbackContext.success("true");
       } else if (this.deploy != null) {
-        logMessage("EXTRACT", "Extracting update");
+        logMessage("EXTRACT", "Extracting update after download");
         cordova.getThreadPool().execute(new Runnable() {
           public void run() {
             deploy.unzip("www.zip", uuid, null);
